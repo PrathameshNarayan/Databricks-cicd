@@ -1,5 +1,4 @@
 name: Databricks Repo Sync
-
 on:
   push:
     branches: [ main ]
@@ -7,7 +6,6 @@ on:
 jobs:
   sync-repos:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -20,7 +18,7 @@ jobs:
       - name: Install Databricks CLI
         run: pip install databricks-cli
 
-      # Step 1: Sync to Dev-Regulatory workspace
+      # Sync to Dev-Regulatory first
       - name: Sync to Dev-Regulatory
         env:
           DATABRICKS_HOST: https://adb-3513101341676673.13.azuredatabricks.net
@@ -30,46 +28,17 @@ jobs:
           echo "Syncing Dev-Regulatory workspace..."
           databricks workspace mkdirs /Repos || true
           databricks workspace mkdirs /Repos/Dev-Regulatory || true
-
           if ! databricks repos get --path "/Repos/Dev-Regulatory/Databricks-cicd" 2>/dev/null; then
             databricks repos create \
               --url https://github.com/${{ github.repository }}.git \
               --provider github \
               --path "/Repos/Dev-Regulatory/Databricks-cicd"
           fi
-
           databricks repos update \
             --path "/Repos/Dev-Regulatory/Databricks-cicd" \
             --branch "main"
-
-      # Step 2: Push changes back to GitHub using GH_PAT
-      - name: Push changes back to GitHub
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-        run: |
-          set -e
-          echo "Resetting Git credentials and pushing changes..."
-
-          # Set Git author
-          git config --global user.name "auto-sync-bot"
-          git config --global user.email "bot@databricks.com"
-
-          # Remove existing credentials from remote origin
-          git remote remove origin
-
-          # Add new origin with personal access token
-          git remote add origin https://${GH_PAT}@github.com/${{ github.repository }}
-
-          # Confirm remote was updated correctly
-          git remote -v
-
-          # Check for changes and push if any
-          git add .
-          git diff --cached --quiet || git commit -m "Auto-push: synced changes from Dev-Regulatory"
-          git push origin main
-
-      # Step 3: Sync to Dev-Ops workspace
-      - name: Sync to Dev-Ops
+      # Then pull from same GitHub repo in Dev-Ops
+      - name: Sync to Dev-Ops (pulls same GitHub code)
         env:
           DATABRICKS_HOST: https://adb-762609464519174.14.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DEV_OPS_TOKEN }}
@@ -78,14 +47,12 @@ jobs:
           echo "Syncing Dev-Ops workspace after Dev-Regulatory..."
           databricks workspace mkdirs /Repos || true
           databricks workspace mkdirs /Repos/Dev-Ops || true
-
           if ! databricks repos get --path "/Repos/Dev-Ops/Databricks-cicd" 2>/dev/null; then
             databricks repos create \
               --url https://github.com/${{ github.repository }}.git \
               --provider github \
               --path "/Repos/Dev-Ops/Databricks-cicd"
           fi
-
           databricks repos update \
             --path "/Repos/Dev-Ops/Databricks-cicd" \
             --branch "main"
