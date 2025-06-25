@@ -40,6 +40,25 @@ jobs:
             --path "/Repos/Dev-Regulatory/Databricks-cicd" \
             --branch "main"
 
+      # Automatically commit and push changes from Dev-Regulatory repo
+      - name: Push changes from Dev-Regulatory repo back to GitHub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_PAT }}
+        run: |
+          set -e
+          echo "Pushing changes from Dev-Regulatory repo to GitHub..."
+
+          git config --global user.name "auto-sync-bot"
+          git config --global user.email "bot@databricks.com"
+
+          # Use token-based authentication for remote origin
+          git remote set-url origin https://${GITHUB_TOKEN}@github.com/${{ github.repository }}
+
+          # Check for changes and push if needed
+          git add .
+          git diff --cached --quiet || git commit -m "Auto-push: synced changes from Databricks Dev-Regulatory"
+          git push origin main
+
       # Then pull from same GitHub repo in Dev-Ops
       - name: Sync to Dev-Ops (pulls same GitHub code)
         env:
