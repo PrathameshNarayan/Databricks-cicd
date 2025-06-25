@@ -1,4 +1,5 @@
 name: Databricks Repo Sync
+
 on:
   push:
     branches: [ main ]
@@ -18,7 +19,7 @@ jobs:
       - name: Install Databricks CLI
         run: pip install databricks-cli
 
-      # Sync to Dev-Regulatory first
+      # Sync to Dev-Regulatory workspace
       - name: Sync to Dev-Regulatory
         env:
           DATABRICKS_HOST: https://adb-3513101341676673.13.azuredatabricks.net
@@ -40,27 +41,25 @@ jobs:
             --path "/Repos/Dev-Regulatory/Databricks-cicd" \
             --branch "main"
 
-      # Automatically commit and push changes from Dev-Regulatory repo
-      - name: Push changes from Dev-Regulatory repo back to GitHub
+      # Push any new changes from Dev-Regulatory repo back to GitHub using GH_PAT
+      - name: Push changes back to GitHub
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_PAT }}
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           set -e
-          echo "Pushing changes from Dev-Regulatory repo to GitHub..."
+          echo "Pushing changes from Dev-Regulatory to GitHub..."
 
           git config --global user.name "auto-sync-bot"
           git config --global user.email "bot@databricks.com"
 
-          # Use token-based authentication for remote origin
-          git remote set-url origin https://${GITHUB_TOKEN}@github.com/${{ github.repository }}
+          git remote set-url origin https://${GH_PAT}@github.com/${{ github.repository }}
 
-          # Check for changes and push if needed
           git add .
-          git diff --cached --quiet || git commit -m "Auto-push: synced changes from Databricks Dev-Regulatory"
+          git diff --cached --quiet || git commit -m "Auto-push: synced changes from Dev-Regulatory"
           git push origin main
 
-      # Then pull from same GitHub repo in Dev-Ops
-      - name: Sync to Dev-Ops (pulls same GitHub code)
+      # Sync to Dev-Ops workspace after push
+      - name: Sync to Dev-Ops
         env:
           DATABRICKS_HOST: https://adb-762609464519174.14.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DEV_OPS_TOKEN }}
