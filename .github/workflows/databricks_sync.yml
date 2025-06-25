@@ -9,47 +9,30 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Get full commit history
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: Install Databricks CLI
-        run: pip install databricks-cli==0.16.7
+      - name: Install Stable Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install urllib3==1.26.6
+          pip install databricks-cli==0.17.3
 
-      # For Dev-Regulatory
       - name: Configure Dev-Regulatory
         env:
           DATABRICKS_HOST: https://adb-3513101341676673.13.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DEV_REGULATORY_TOKEN }}
         run: |
-          # Create directory structure
+          # Create parent directories (idempotent)
+          databricks workspace mkdirs /Repos
           databricks workspace mkdirs /Repos/Dev-Regulatory
-          
-          # Init or update repo
+
+          # Initialize repo
           if ! databricks repos get --path "/Repos/Dev-Regulatory/Databricks-cicd" 2>/dev/null; then
             databricks repos create \
               --url https://github.com/${{ github.repository }}.git \
               --provider github \
-              --path "/Repos/Dev-Regulatory/Databricks-cicd"
-          else
-            databricks repos update \
-              --path "/Repos/Dev-Regulatory/Databricks-cicd" \
-              --branch main
-          fi
-
-          # Validate sync
-          echo "Synced files:"
-          databricks workspace ls /Repos/Dev-Regulatory/Databricks-cicd
-
-      # For Dev-Ops (repeat similar steps)
-      - name: Configure Dev-Ops
-        env:
-          DATABRICKS_HOST: https://adb-762609464519174.14.azuredatabricks.net
-          DATABRICKS_TOKEN: ${{ secrets.DEV_OPS_TOKEN }}
-        run: |
-          databricks workspace mkdirs /Repos/Dev-Ops
-          # ... (same logic as above)
+              --path "/Repos/Dev-Regulatory/
