@@ -19,11 +19,15 @@ jobs:
         run: pip install databricks-cli
 
       # Sync to Dev-Regulatory
-      - name: Update Dev-Regulatory Repo
+      - name: Setup Dev-Regulatory Repo
         env:
           DATABRICKS_HOST: https://adb-3513101341676673.13.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DEV_REGULATORY_TOKEN }}
         run: |
+          # Create parent directory structure
+          databricks workspace mkdirs /Repos
+          databricks workspace mkdirs /Repos/Dev-Regulatory
+
           # Create repo if it doesn't exist
           if ! databricks repos get --path "/Repos/Dev-Regulatory/Databricks-cicd" 2>/dev/null; then
             databricks repos create \
@@ -31,18 +35,22 @@ jobs:
               --provider github \
               --path "/Repos/Dev-Regulatory/Databricks-cicd"
           fi
-          
+
           # Force sync updates
           databricks repos update \
             --path "/Repos/Dev-Regulatory/Databricks-cicd" \
             --branch "main"
 
       # Sync to Dev-Ops
-      - name: Update Dev-Ops Repo
+      - name: Setup Dev-Ops Repo
         env:
           DATABRICKS_HOST: https://adb-762609464519174.14.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DEV_OPS_TOKEN }}
         run: |
+          # Create parent directory structure
+          databricks workspace mkdirs /Repos
+          databricks workspace mkdirs /Repos/Dev-Ops
+
           # Create repo if it doesn't exist
           if ! databricks repos get --path "/Repos/Dev-Ops/Databricks-cicd" 2>/dev/null; then
             databricks repos create \
@@ -50,7 +58,7 @@ jobs:
               --provider github \
               --path "/Repos/Dev-Ops/Databricks-cicd"
           fi
-          
+
           # Force sync updates
           databricks repos update \
             --path "/Repos/Dev-Ops/Databricks-cicd" \
