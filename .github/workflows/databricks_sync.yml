@@ -18,22 +18,40 @@ jobs:
       - name: Install Databricks CLI
         run: pip install databricks-cli
 
-      # Sync to Dev-Regulatory (Azure Databricks)
+      # Sync to Dev-Regulatory
       - name: Update Dev-Regulatory Repo
         env:
-          DATABRICKS_HOST: https://adb-3513101341676673.13.azuredatabricks.net  # No trailing slash!
+          DATABRICKS_HOST: https://adb-3513101341676673.13.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DEV_REGULATORY_TOKEN }}
         run: |
+          # Create repo if it doesn't exist
+          if ! databricks repos get --path "/Repos/Dev-Regulatory/Databricks-cicd" 2>/dev/null; then
+            databricks repos create \
+              --url https://github.com/${{ github.repository }}.git \
+              --provider github \
+              --path "/Repos/Dev-Regulatory/Databricks-cicd"
+          fi
+          
+          # Force sync updates
           databricks repos update \
             --path "/Repos/Dev-Regulatory/Databricks-cicd" \
             --branch "main"
 
-      # Sync to Dev-Ops (Azure Databricks)
+      # Sync to Dev-Ops
       - name: Update Dev-Ops Repo
         env:
-          DATABRICKS_HOST: https://adb-762609464519174.14.azuredatabricks.net  # No trailing slash!
+          DATABRICKS_HOST: https://adb-762609464519174.14.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DEV_OPS_TOKEN }}
         run: |
+          # Create repo if it doesn't exist
+          if ! databricks repos get --path "/Repos/Dev-Ops/Databricks-cicd" 2>/dev/null; then
+            databricks repos create \
+              --url https://github.com/${{ github.repository }}.git \
+              --provider github \
+              --path "/Repos/Dev-Ops/Databricks-cicd"
+          fi
+          
+          # Force sync updates
           databricks repos update \
             --path "/Repos/Dev-Ops/Databricks-cicd" \
             --branch "main"
