@@ -39,7 +39,7 @@ jobs:
 
           # 3. Correct import command syntax
           databricks workspace import \
-            "test.py" \
+            "test" \
             "/Repos/Dev-Regulatory/Databricks-cicd/test" \
             --format SOURCE \
             --language PYTHON \
