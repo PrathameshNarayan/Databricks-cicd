@@ -10,22 +10,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Sync to Dev-Regulatory Workspace
-      - name: Update Dev-Regulatory Repo
-        uses: databricks/sync-repo@v1
+      - name: Sync to Dev-Regulatory
+        uses: databricks/click-deploy@v1
         with:
           workspace-url: https://ulssouth.cloud.databricks.com
           workspace-id: ${{ secrets.DEV_REGULATORY_WORKSPACE_ID }}
           access-token: ${{ secrets.DEV_REGULATORY_TOKEN }}
           repo-path: /Repos/Dev-Regulatory/Databricks-cicd
-          branch: main
-
-      # Sync to Dev-Ops Workspace
-      - name: Update Dev-Ops Repo
-        uses: databricks/sync-repo@v1
-        with:
-          workspace-url: https://ulssouth.cloud.databricks.com
-          workspace-id: ${{ secrets.DEV_OPS_WORKSPACE_ID }}
-          access-token: ${{ secrets.DEV_OPS_TOKEN }}
-          repo-path: /Repos/Dev-Ops/Databricks-cicd
           branch: main
