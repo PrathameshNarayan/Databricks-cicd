@@ -18,20 +18,20 @@ jobs:
       - name: Install Databricks CLI
         run: pip install databricks-cli
 
-      # Sync to Dev-Regulatory
+      # Sync to Dev-Regulatory (Azure Databricks)
       - name: Update Dev-Regulatory Repo
         env:
-          DATABRICKS_HOST: https://ulssouth.cloud.databricks.com
+          DATABRICKS_HOST: https://adb-3513101341676673.13.azuredatabricks.net  # No trailing slash!
           DATABRICKS_TOKEN: ${{ secrets.DEV_REGULATORY_TOKEN }}
         run: |
           databricks repos update \
             --path "/Repos/Dev-Regulatory/Databricks-cicd" \
             --branch "main"
 
-      # Sync to Dev-Ops
+      # Sync to Dev-Ops (Azure Databricks)
       - name: Update Dev-Ops Repo
         env:
-          DATABRICKS_HOST: https://ulssouth.cloud.databricks.com
+          DATABRICKS_HOST: https://adb-762609464519174.14.azuredatabricks.net  # No trailing slash!
           DATABRICKS_TOKEN: ${{ secrets.DEV_OPS_TOKEN }}
         run: |
           databricks repos update \
