@@ -1,0 +1,31 @@
+name: Databricks Repo Sync
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  sync-workspaces:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Sync to Dev-Regulatory Workspace
+      - name: Update Dev-Regulatory Repo
+        uses: databricks/sync-repo@v1
+        with:
+          workspace-url: https://ulssouth.cloud.databricks.com
+          workspace-id: ${{ secrets.DEV_REGULATORY_WORKSPACE_ID }}
+          access-token: ${{ secrets.DEV_REGULATORY_TOKEN }}
+          repo-path: /Repos/Dev-Regulatory/Databricks-cicd
+          branch: main
+
+      # Sync to Dev-Ops Workspace
+      - name: Update Dev-Ops Repo
+        uses: databricks/sync-repo@v1
+        with:
+          workspace-url: https://ulssouth.cloud.databricks.com
+          workspace-id: ${{ secrets.DEV_OPS_WORKSPACE_ID }}
+          access-token: ${{ secrets.DEV_OPS_TOKEN }}
+          repo-path: /Repos/Dev-Ops/Databricks-cicd
+          branch: main
