@@ -7,6 +7,7 @@ on:
 jobs:
   sync-repos:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -19,7 +20,7 @@ jobs:
       - name: Install Databricks CLI
         run: pip install databricks-cli
 
-      # Sync to Dev-Regulatory workspace
+      # Step 1: Sync to Dev-Regulatory workspace
       - name: Sync to Dev-Regulatory
         env:
           DATABRICKS_HOST: https://adb-3513101341676673.13.azuredatabricks.net
@@ -41,24 +42,33 @@ jobs:
             --path "/Repos/Dev-Regulatory/Databricks-cicd" \
             --branch "main"
 
-      # Push any new changes from Dev-Regulatory repo back to GitHub using GH_PAT
+      # Step 2: Push changes back to GitHub using GH_PAT
       - name: Push changes back to GitHub
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           set -e
-          echo "Pushing changes from Dev-Regulatory to GitHub..."
+          echo "Resetting Git credentials and pushing changes..."
 
+          # Set Git author
           git config --global user.name "auto-sync-bot"
           git config --global user.email "bot@databricks.com"
 
-          git remote set-url origin https://${GH_PAT}@github.com/${{ github.repository }}
+          # Remove existing credentials from remote origin
+          git remote remove origin
 
+          # Add new origin with personal access token
+          git remote add origin https://${GH_PAT}@github.com/${{ github.repository }}
+
+          # Confirm remote was updated correctly
+          git remote -v
+
+          # Check for changes and push if any
           git add .
           git diff --cached --quiet || git commit -m "Auto-push: synced changes from Dev-Regulatory"
           git push origin main
 
-      # Sync to Dev-Ops workspace after push
+      # Step 3: Sync to Dev-Ops workspace
       - name: Sync to Dev-Ops
         env:
           DATABRICKS_HOST: https://adb-762609464519174.14.azuredatabricks.net
