@@ -3,11 +3,10 @@ name: Databricks Repo Sync
 on:
   push:
     branches:
-      - main
-      - feature/**
+      - main  # ✅ Sync only happens after merge into main
   pull_request:
     branches:
-      - main
+      - main  # ✅ Enables checks/tests if you add them for PRs
 
 jobs:
   sync-repos:
@@ -23,7 +22,9 @@ jobs:
           python-version: '3.9'
 
       - name: Install Databricks CLI
-        run: pip install databricks-cli
+        run: |
+          pip install databricks-cli
+          databricks --version  # ✅ Optional: sanity check
 
       # ✅ Sync to Dev-Regulatory (only on main)
       - name: Sync to Dev-Regulatory
