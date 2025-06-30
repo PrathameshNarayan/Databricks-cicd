@@ -3,10 +3,10 @@ name: Databricks Repo Sync
 on:
   push:
     branches:
-      - main  # ✅ Sync only happens after merge into main
+      - main  # ✅ Only syncs after merge into main
   pull_request:
     branches:
-      - main  # ✅ Enables checks/tests if you add them for PRs
+      - main  # ✅ Allow checks/tests during PR
 
 jobs:
   sync-repos:
@@ -24,17 +24,23 @@ jobs:
       - name: Install Databricks CLI
         run: |
           pip install databricks-cli
-          databricks --version  # ✅ Optional: sanity check
+          databricks --version  # ✅ Optional sanity check
+
+      # 🚨 Guard: Cancel if not on main branch
+      - name: Prevent sync if not on main branch
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "❌ This workflow only syncs on 'main'. Current ref: ${{ github.ref }}"
+          exit 1
 
       # ✅ Sync to Dev-Regulatory (only on main)
       - name: Sync to Dev-Regulatory
-        if: github.ref == 'refs/heads/main'
         env:
           DATABRICKS_HOST: https://adb-3513101341676673.13.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DEV_REGULATORY_TOKEN }}
         run: |
           set -e
-          echo "Syncing Dev-Regulatory workspace..."
+          echo "✅ Syncing Dev-Regulatory workspace..."
           databricks workspace mkdirs /Repos || true
           databricks workspace mkdirs /Repos/Dev-Regulatory || true
           if ! databricks repos get --path "/Repos/Dev-Regulatory/Databricks-cicd" 2>/dev/null; then
@@ -49,13 +55,12 @@ jobs:
 
       # ✅ Sync to Dev-Ops (only on main)
       - name: Sync to Dev-Ops
-        if: github.ref == 'refs/heads/main'
         env:
           DATABRICKS_HOST: https://adb-762609464519174.14.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DEV_OPS_TOKEN }}
         run: |
           set -e
-          echo "Syncing Dev-Ops workspace after Dev-Regulatory..."
+          echo "✅ Syncing Dev-Ops workspace after Dev-Regulatory..."
           databricks workspace mkdirs /Repos || true
           databricks workspace mkdirs /Repos/Dev-Ops || true
           if ! databricks repos get --path "/Repos/Dev-Ops/Databricks-cicd" 2>/dev/null; then
