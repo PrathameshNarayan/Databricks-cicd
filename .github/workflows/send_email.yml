@@ -36,6 +36,9 @@ jobs:
           receiver_email = os.getenv('MAIN_BRANCH_OWNER_EMAIL')  # Owner email from secret
           password = os.getenv('OUTLOOK_PASSWORD')
           
+          if not sender_email or not receiver_email or not password:
+              raise ValueError('One or more required environment variables are missing')
+          
           # Email content
           subject = 'New commit pushed to main branch'
           body = f'''
@@ -73,7 +76,7 @@ jobs:
               print(f'Error sending email: {e}')
           finally:
               server.quit()
-                    "
+                  "
                   env:
                     OUTLOOK_EMAIL: ${{ secrets.OUTLOOK_EMAIL }}  # Your Outlook email
                     OUTLOOK_PASSWORD: ${{ secrets.OUTLOOK_PASSWORD }}  # Your Outlook password
