@@ -1,4 +1,4 @@
-name: Databricks Repo Sync
+name: Databricks Repo Sync and Notify
 
 on:
   push:
@@ -67,3 +67,62 @@ jobs:
           databricks repos update \
             --path "/Repos/Dev-Ops/Databricks-cicd" \
             --branch "main"
+
+      # ✅ Send email notification on successful push to main
+      - name: Send email notification
+        if: github.ref == 'refs/heads/main'  # Only for pushes to the main branch
+        run: |
+          python -m pip install smtplib email
+
+          python -c "
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+# Get GitHub Actor and Commit Message
+actor = '${GITHUB_ACTOR}'
+commit_message = '${GITHUB_COMMIT_MESSAGE}'
+
+# Email details
+sender_email = '${{ secrets.OUTLOOK_EMAIL }}'
+receiver_email = '${{ secrets.MAIN_BRANCH_OWNER_EMAIL }}'  # Owner email from secret
+password = '${{ secrets.OUTLOOK_PASSWORD }}'
+
+# Email content
+subject = 'New commit pushed to main branch'
+body = f'''
+Hello,
+
+A new commit has been pushed to the 'main' branch by {actor}.
+
+Commit Message:
+{commit_message}
+
+Best regards,
+Your GitHub Actions CI
+'''
+
+# Setup the MIME
+msg = MIMEMultipart()
+msg['From'] = sender_email
+msg['To'] = receiver_email
+msg['Subject'] = subject
+msg.attach(MIMEText(body, 'plain'))
+
+# SMTP server configuration
+smtp_server = 'smtp-mail.outlook.com'
+smtp_port = 587
+
+# Send the email
+try:
+    server = smtplib.SMTP(smtp_server, smtp_port)
+    server.starttls()  # Start TLS encryption
+    server.login(sender_email, password)
+    text = msg.as_string()
+    server.sendmail(sender_email, receiver_email, text)
+    print('Email sent successfully!')
+except Exception as e:
+    print(f'Error sending email: {e}')
+finally:
+    server.quit()
+          "
