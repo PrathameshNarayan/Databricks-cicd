@@ -1,4 +1,4 @@
-name: Databricks Repo Sync and Notify
+name: Databricks Repo Sync
 
 on:
   push:
@@ -67,10 +67,3 @@ jobs:
           databricks repos update \
             --path "/Repos/Dev-Ops/Databricks-cicd" \
             --branch "main"
-
-      # ✅ Send email notification on successful push to main
-      - name: Send email notification
-        if: github.ref == 'refs/heads/main'  # Only for pushes to the main branch
-        run: |
-          echo "Sending email notification..."
-          python3 send_email.py
