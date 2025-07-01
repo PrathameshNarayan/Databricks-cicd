@@ -18,10 +18,6 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install necessary Python packages
-        run: |
-          pip install smtplib
-
       - name: Send Email Notification
         run: |
           echo "Sending email notification..."
