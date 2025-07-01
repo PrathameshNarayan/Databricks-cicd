@@ -19,8 +19,8 @@ jobs:
           username: ${{ secrets.OUTLOOK_EMAIL }}
           password: ${{ secrets.OUTLOOK_PASSWORD }}
           subject: "New PR Created: ${{ github.event.pull_request.title }}"
-          to: Prathamesh.Narayan@WinWire.com
-          from: Prathamesh.Narayan@WinWire.com
+          to: prathameshvnnie@gmail.com
+          from: banglorercb06@gmail.com
           body: |
             A new PR has been created targeting **main** branch.
             
