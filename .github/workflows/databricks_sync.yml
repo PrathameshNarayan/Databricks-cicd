@@ -3,10 +3,10 @@ name: Databricks Repo Sync
 on:
   push:
     branches:
-      - main  # ✅ Sync only happens after merge into main
+      - main
   pull_request:
     branches:
-      - main  # ✅ Enables checks/tests if you add them for PRs
+      - main
 
 jobs:
   sync-repos:
@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for full branch history
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -24,18 +26,26 @@ jobs:
       - name: Install Databricks CLI
         run: |
           pip install databricks-cli
-          databricks --version  # ✅ Optional: sanity check
+          databricks --version
 
-      # ✅ Sync to Dev-Regulatory (only on main)
-      - name: Sync to Dev-Regulatory
-        if: github.ref == 'refs/heads/main'
+      # 🔁 Step 1: Sync main → test branch in Git
+      - name: Sync main → test branch
+        run: |
+          git config user.name "ci-bot"
+          git config user.email "ci@example.com"
+          git fetch origin test
+          git checkout test
+          git merge origin/main --no-edit
+          git push origin test
+
+      # 🚀 Step 2: Deploy to Dev-Regulatory (test branch)
+      - name: Sync Dev-Regulatory (test)
         env:
           DATABRICKS_HOST: https://adb-3513101341676673.13.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DEV_REGULATORY_TOKEN }}
         run: |
           set -e
-          echo "Syncing Dev-Regulatory workspace..."
-          databricks workspace mkdirs /Repos || true
+          echo "Deploying test branch to Dev-Regulatory..."
           databricks workspace mkdirs /Repos/Dev-Regulatory || true
           if ! databricks repos get --path "/Repos/Dev-Regulatory/Databricks-cicd" 2>/dev/null; then
             databricks repos create \
@@ -45,18 +55,16 @@ jobs:
           fi
           databricks repos update \
             --path "/Repos/Dev-Regulatory/Databricks-cicd" \
-            --branch "main"
+            --branch "test"
 
-      # ✅ Sync to Dev-Ops (only on main)
-      - name: Sync to Dev-Ops
-        if: github.ref == 'refs/heads/main'
+      # 🚀 Step 3: Deploy to Dev-Ops (test branch)
+      - name: Sync Dev-Ops (test)
         env:
           DATABRICKS_HOST: https://adb-762609464519174.14.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DEV_OPS_TOKEN }}
         run: |
           set -e
-          echo "Syncing Dev-Ops workspace after Dev-Regulatory..."
-          databricks workspace mkdirs /Repos || true
+          echo "Deploying test branch to Dev-Ops..."
           databricks workspace mkdirs /Repos/Dev-Ops || true
           if ! databricks repos get --path "/Repos/Dev-Ops/Databricks-cicd" 2>/dev/null; then
             databricks repos create \
@@ -66,4 +74,4 @@ jobs:
           fi
           databricks repos update \
             --path "/Repos/Dev-Ops/Databricks-cicd" \
-            --branch "main"
+            --branch "test"
