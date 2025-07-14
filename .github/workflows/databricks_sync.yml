@@ -1,16 +1,15 @@
-name: Databricks Repo Deploy
+name: Databricks Repo Sync
 
 on:
   push:
     branches:
-      - test
-  workflow_dispatch:
-
-permissions:
-  contents: write
+      - test  # ✅ Sync only happens after merge into main
+  pull_request:
+    branches:
+      - test  # ✅ Enables checks/tests if you add them for PRs
 
 jobs:
-  deploy-to-databricks:
+  sync-repos:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,41 +21,49 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install Databricks CLI v2 (new CLI)
+      - name: Install Databricks CLI
         run: |
-          pip install databricks-cli-v2
-          databricks -v  # 👈 This will now show CLI v2 installed
+          pip install databricks-cli
+          databricks --version  # ✅ Optional: sanity check
 
-      # 🚀 Deploy to Dev-Regulatory
-      - name: Sync Dev-Regulatory (test)
+      # ✅ Sync to Dev-Regulatory (only on main)
+      - name: Sync to Dev-Regulatory
+        if: github.ref == 'refs/heads/main'
         env:
           DATABRICKS_HOST: https://adb-3513101341676673.13.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DEV_REGULATORY_TOKEN }}
         run: |
-          echo "Deploying test branch to Dev-Regulatory..."
-
-          # Create the repo directory if needed
+          set -e
+          echo "Syncing Dev-Regulatory workspace..."
+          databricks workspace mkdirs /Repos || true
           databricks workspace mkdirs /Repos/Dev-Regulatory || true
-
-          # Check if repo exists
-          if ! databricks repos get --path "/Repos/Dev-Regulatory/Databricks-cicd" > /dev/null 2>&1; then
-            echo "Creating new repo in Dev-Regulatory..."
+          if ! databricks repos get --path "/Repos/Dev-Regulatory/Databricks-cicd" 2>/dev/null; then
             databricks repos create \
-              --path "/Repos/Dev-Regulatory/Databricks-cicd" \
-              --url "https://github.com/${{ github.repository }}.git" \
-              --provider "github" \
-              --branch "test"
-          else
-            echo "Repo already exists. Updating to branch 'test'..."
-            databricks repos update \
-              --path "/Repos/Dev-Regulatory/Databricks-cicd" \
-              --branch "test" || {
-                echo "❌ Git conflict. Resetting Dev-Regulatory repo..."
-                databricks repos delete --path "/Repos/Dev-Regulatory/Databricks-cicd"
-                databricks repos create \
-                  --path "/Repos/Dev-Regulatory/Databricks-cicd" \
-                  --url "https://github.com/${{ github.repository }}.git" \
-                  --provider "github" \
-                  --branch "test"
-              }
+              --url https://github.com/${{ github.repository }}.git \
+              --provider github \
+              --path "/Repos/Dev-Regulatory/Databricks-cicd"
           fi
+          databricks repos update \
+            --path "/Repos/Dev-Regulatory/Databricks-cicd" \
+            --branch "test"
+
+      # ✅ Sync to Dev-Ops (only on main)
+      - name: Sync to Dev-Ops
+        if: github.ref == 'refs/heads/main'
+        env:
+          DATABRICKS_HOST: https://adb-762609464519174.14.azuredatabricks.net
+          DATABRICKS_TOKEN: ${{ secrets.DEV_OPS_TOKEN }}
+        run: |
+          set -e
+          echo "Syncing Dev-Ops workspace after Dev-Regulatory..."
+          databricks workspace mkdirs /Repos || true
+          databricks workspace mkdirs /Repos/Dev-Ops || true
+          if ! databricks repos get --path "/Repos/Dev-Ops/Databricks-cicd" 2>/dev/null; then
+            databricks repos create \
+              --url https://github.com/${{ github.repository }}.git \
+              --provider github \
+              --path "/Repos/Dev-Ops/Databricks-cicd"
+          fi
+          databricks repos update \
+            --path "/Repos/Dev-Ops/Databricks-cicd" \
+            --branch "test"
