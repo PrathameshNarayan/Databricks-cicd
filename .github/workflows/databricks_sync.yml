@@ -1,25 +1,20 @@
-name: Databricks Repo Sync
+name: Databricks Repo Deploy
 
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - test  # 🚀 Trigger on pushes to `test` branch
 
 permissions:
-  contents: write  # ✅ This allows pushing to branches like `test`
+  contents: read  # Minimal permissions, since we're not pushing back to Git
 
 jobs:
-  sync-repos:
+  deploy-to-databricks:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # ✅ Required to access all branches
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -31,23 +26,12 @@ jobs:
           pip install databricks-cli
           databricks --version
 
-      # 🔁 Sync main → test in Git
-      - name: Sync main → test branch
-        run: |
-          git config user.name "ci-bot"
-          git config user.email "ci@example.com"
-          git fetch origin test
-          git checkout test
-          git merge origin/main --no-edit
-          git push origin test
-
-      # 🚀 Deploy to Dev-Regulatory (test branch)
+      # 🚀 Deploy to Dev-Regulatory
       - name: Sync Dev-Regulatory (test)
         env:
           DATABRICKS_HOST: https://adb-3513101341676673.13.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DEV_REGULATORY_TOKEN }}
         run: |
-          set -e
           echo "Deploying test branch to Dev-Regulatory..."
           databricks workspace mkdirs /Repos/Dev-Regulatory || true
           if ! databricks repos get --path "/Repos/Dev-Regulatory/Databricks-cicd" 2>/dev/null; then
@@ -60,13 +44,12 @@ jobs:
             --path "/Repos/Dev-Regulatory/Databricks-cicd" \
             --branch "test"
 
-      # 🚀 Deploy to Dev-Ops (test branch)
+      # 🚀 Deploy to Dev-Ops
       - name: Sync Dev-Ops (test)
         env:
           DATABRICKS_HOST: https://adb-762609464519174.14.azuredatabricks.net
           DATABRICKS_TOKEN: ${{ secrets.DEV_OPS_TOKEN }}
         run: |
-          set -e
           echo "Deploying test branch to Dev-Ops..."
           databricks workspace mkdirs /Repos/Dev-Ops || true
           if ! databricks repos get --path "/Repos/Dev-Ops/Databricks-cicd" 2>/dev/null; then
