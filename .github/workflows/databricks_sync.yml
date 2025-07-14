@@ -7,7 +7,7 @@ on:
   workflow_dispatch:  # ✅ Allow manual runs from GitHub Actions UI
 
 permissions:
-  contents: write     
+  contents: write
 
 jobs:
   deploy-to-databricks:
@@ -36,14 +36,26 @@ jobs:
           echo "Deploying test branch to Dev-Regulatory..."
           databricks workspace mkdirs /Repos/Dev-Regulatory || true
           if ! databricks repos get --path "/Repos/Dev-Regulatory/Databricks-cicd" 2>/dev/null; then
+            echo "Creating new repo in Dev-Regulatory..."
             databricks repos create \
               --url https://github.com/${{ github.repository }}.git \
               --provider github \
-              --path "/Repos/Dev-Regulatory/Databricks-cicd"
+              --path "/Repos/Dev-Regulatory/Databricks-cicd" \
+              --branch "test"
+          else
+            echo "Repo already exists. Attempting to update branch to 'test'..."
+            databricks repos update \
+              --path "/Repos/Dev-Regulatory/Databricks-cicd" \
+              --branch "test" || {
+                echo "❌ Git conflict detected in Dev-Regulatory. Resetting repo..."
+                databricks repos delete --path "/Repos/Dev-Regulatory/Databricks-cicd"
+                databricks repos create \
+                  --url https://github.com/${{ github.repository }}.git \
+                  --provider github \
+                  --path "/Repos/Dev-Regulatory/Databricks-cicd" \
+                  --branch "test"
+              }
           fi
-          databricks repos update \
-            --path "/Repos/Dev-Regulatory/Databricks-cicd" \
-            --branch "test"
 
       # 🚀 Deploy to Dev-Ops
       - name: Sync Dev-Ops (test)
@@ -54,11 +66,23 @@ jobs:
           echo "Deploying test branch to Dev-Ops..."
           databricks workspace mkdirs /Repos/Dev-Ops || true
           if ! databricks repos get --path "/Repos/Dev-Ops/Databricks-cicd" 2>/dev/null; then
+            echo "Creating new repo in Dev-Ops..."
             databricks repos create \
               --url https://github.com/${{ github.repository }}.git \
               --provider github \
-              --path "/Repos/Dev-Ops/Databricks-cicd"
+              --path "/Repos/Dev-Ops/Databricks-cicd" \
+              --branch "test"
+          else
+            echo "Repo already exists. Attempting to update branch to 'test'..."
+            databricks repos update \
+              --path "/Repos/Dev-Ops/Databricks-cicd" \
+              --branch "test" || {
+                echo "❌ Git conflict detected in Dev-Ops. Resetting repo..."
+                databricks repos delete --path "/Repos/Dev-Ops/Databricks-cicd"
+                databricks repos create \
+                  --url https://github.com/${{ github.repository }}.git \
+                  --provider github \
+                  --path "/Repos/Dev-Ops/Databricks-cicd" \
+                  --branch "test"
+              }
           fi
-          databricks repos update \
-            --path "/Repos/Dev-Ops/Databricks-cicd" \
-            --branch "test"
